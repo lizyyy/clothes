@@ -2,9 +2,10 @@
 // 文件output：短信验证码登录卡片视图、状态更新与登录回调
 // 文件pos：iOS 主应用实现层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 ARCH.md。
-// 最近更新：2026-03-10，拆分短信验证码登录卡片，避免认证视图文件继续膨胀。
+// 最近更新：2026-03-12，补齐短信登录卡片内缺失的错误处理/设置跳转辅助方法，修复编译错误。
 import Foundation
 import SwiftUI
+import UIKit
 
 struct SMSLoginInlineCard: View {
     let onAuthSuccess: (AuthResponse, String) -> Void
@@ -196,6 +197,40 @@ struct SMSLoginInlineCard: View {
             errorMessage = resolvedSMSErrorMessage(error)
             showOpenSettingsAlert = shouldSuggestOpenSettings(for: error)
         }
+    }
+
+    private func shouldSuggestOpenSettings(for error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            switch nsError.code {
+            case NSURLErrorNotConnectedToInternet,
+                 NSURLErrorDataNotAllowed,
+                 NSURLErrorNetworkConnectionLost,
+                 NSURLErrorCannotFindHost,
+                 NSURLErrorCannotConnectToHost,
+                 NSURLErrorTimedOut:
+                return true
+            default:
+                break
+            }
+        }
+
+        let text = error.localizedDescription.lowercased()
+        return text.contains("the internet connection appears to be offline")
+            || text.contains("offline")
+            || text.contains("网络")
+    }
+
+    private func resolvedSMSErrorMessage(_ error: Error) -> String {
+        if shouldSuggestOpenSettings(for: error) {
+            return "网络不可用，请检查系统设置中 Clothes 的“无线局域网与蜂窝网络”权限。"
+        }
+        return error.localizedDescription
+    }
+
+    private func openAppSettings(with openURL: OpenURLAction) {
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+        openURL(settingsURL)
     }
 
     private func shouldFallbackToSMSRegister(_ error: Error) -> Bool {

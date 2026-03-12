@@ -41,3 +41,4 @@
 - 2026-03-06: `ProfileAuthViews.swift` 的短信登录链路新增网络离线识别：发送验证码失败时给出“无线局域网与蜂窝网络”权限指引，并支持一键跳转系统设置页（`UIApplication.openSettingsURLString`）。
 - 2026-03-06: `ProfileTabView+Actions.swift` 与 `ProfileRegistrationFlowView.swift` 将短信注册默认昵称从手机号改为 `穿起来<uid>`（无 uid 时退回 `穿起来用户`），并同步调整注册页文案，避免手机号出现在公开昵称位。
 - 2026-03-07: `IAPManager.swift` 抽出共享充值商品目录，`ProfileWalletViews.swift` 改为优先展示 StoreKit `displayPrice`；仅 `dev + DEBUG` 保留后端直充兜底，`online` 强制走正式商品与 Apple 内购流程。
+- 2026-03-12: `SMSLoginInlineCard.swift` 补齐 `resolvedSMSErrorMessage` / `shouldSuggestOpenSettings` / `openAppSettings` 本地辅助方法，并引入 `UIKit` 以支持设置页跳转，修复拆分后方法不可见导致的编译报错。
