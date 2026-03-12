@@ -8,6 +8,7 @@
 //
 //  Created by Codex on 2026/2/7.
 //  Updated by Codex on 2026/3/5: 修复 follow/like 请求缺少 /api/v1 前缀导致 404。
+//  Updated by Codex on 2026/3/5: 添加 fetchFollowing 和 fetchFollowers API 方法用于个人主页功能。
 //
 
 import Foundation
@@ -101,6 +102,22 @@ struct ExploreService {
         request.httpMethod = isLiked ? "POST" : "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         _ = try await send(request, as: ExploreLikeActionResponse.self)
+    }
+
+    func fetchFollowing(token: String, userID: Int64) async throws -> [ExploreCreatorDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/following"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await send(request, as: [ExploreCreatorDTO].self)
+    }
+
+    func fetchFollowers(token: String, userID: Int64) async throws -> [ExploreCreatorDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/followers"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await send(request, as: [ExploreCreatorDTO].self)
     }
 
     private func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {
