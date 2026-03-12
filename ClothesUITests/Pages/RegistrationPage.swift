@@ -256,7 +256,6 @@ struct RegistrationPage {
     }
 
     private func makeRandomPhone() -> String {
-        let suffix = Int(Date().timeIntervalSince1970) % 1000000000
-        return String(format: "1%010d", suffix)
+        return "18888888888"
     }
 }

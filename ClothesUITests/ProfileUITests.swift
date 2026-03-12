@@ -25,7 +25,7 @@ final class ProfileUITests: BaseTestCase {
         let profilePage = ProfilePage(app: app)
         if !profilePage.isLoggedIn {
             if app.textFields["sms.inline.phone.field"].waitForExistence(timeout: 2) {
-                loginByInlineSMS(phone: "13800138000")
+                loginByInlineSMS(phone: "18888888888")
                 return
             }
             let loginPage = profilePage.tapLogin()

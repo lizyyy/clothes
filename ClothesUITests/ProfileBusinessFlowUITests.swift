@@ -279,7 +279,7 @@ final class ProfileBusinessFlowUITests: BaseTestCase {
             value /= alphabet.count
         }
         let username = "test\(code)"
-        let phone = String(format: "1%010d", Int.random(in: 3000000000...9999999999))
+        let phone = "18888888888"
         return (username, "nick_\(prefix)_\(code)", phone, "qwe123")
     }
 

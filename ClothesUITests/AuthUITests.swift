@@ -75,9 +75,9 @@ final class AuthUITests: BaseTestCase {
             throw XCTSkip("当前入口未提供忘记密码页面，跳过该用例")
         }
 
-        UITestSync.clearAndType(app.textFields["reset.phone.field"], text: "1a38001380001234")
+        UITestSync.clearAndType(app.textFields["reset.phone.field"], text: "1a888888888881234")
         let normalizedPhone = (app.textFields["reset.phone.field"].value as? String) ?? ""
-        XCTAssertEqual(normalizedPhone, "13800138000", "手机号应限制为 11 位数字")
+        XCTAssertEqual(normalizedPhone, "18888888888", "手机号应限制为 11 位数字")
 
         tapButton("reset.send.button")
         XCTAssertTrue(app.buttons["reset.resend.button"].waitForExistence(timeout: 5), "应进入验证码步骤")
@@ -168,7 +168,7 @@ final class AuthUITests: BaseTestCase {
     private func makeAccount(prefix: String) -> TestAccount {
         let suffix = Int(Date().timeIntervalSince1970) % 100000
         let username = "\(prefix)\(suffix)"
-        let phone = String(format: "1%010d", suffix + 1000000000)
+        let phone = "18888888888"
         return TestAccount(username: username, nickname: "nick_\(username)", phone: phone, password: "qwe123")
     }
 

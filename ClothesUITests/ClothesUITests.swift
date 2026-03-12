@@ -49,10 +49,10 @@ final class ClothesUITests: XCTestCase {
     static func getAccount(index: Int) -> TestAccount {
       let formattedIndex = String(format: "%02d", index)
       let presetPhones: [Int: String] = [
-        20: "18600646073",
-        21: "19536108230"
+        20: "18888888888",
+        21: "18888888888"
       ]
-      let fallback = String(format: "1%010d", 8000000000 + index)
+      let fallback = "18888888888"
       return TestAccount(
         username: "test\(formattedIndex)",
         nickname: "testnickname\(formattedIndex)",

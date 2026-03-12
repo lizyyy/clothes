@@ -41,7 +41,7 @@ final class AuthValidationUITests: BaseTestCase {
         let codeField = app.textFields["sms.inline.code.field"]
         XCTAssertTrue(phoneField.waitForExistence(timeout: 6), "未找到手机号输入框")
         XCTAssertTrue(codeField.waitForExistence(timeout: 6), "未找到验证码输入框")
-        UITestSync.clearAndType(phoneField, text: "13800138000")
+        UITestSync.clearAndType(phoneField, text: "18888888888")
         UITestSync.clearAndType(codeField, text: "123456")
         ensureInlineAgreement()
 
@@ -65,7 +65,7 @@ final class AuthValidationUITests: BaseTestCase {
     }
 
     private func fillAccountStepForValidation() {
-        let phone = "1\(Int(Date().timeIntervalSince1970) % 10000000000)"
+        let phone = "18888888888"
         let username = "ui\(Int(Date().timeIntervalSince1970))"
         UITestSync.clearAndType(app.textFields["register.phone.field"], text: phone)
         UITestSync.clearAndType(app.textFields["register.smsCode.field"], text: "123456")

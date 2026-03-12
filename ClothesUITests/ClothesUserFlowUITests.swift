@@ -25,11 +25,11 @@ final class ClothesUserFlowUITests: XCTestCase {
         static func getAccount(_ index: Int) -> TestAccount {
             let idx = max(1, min(99, index))
             let presetPhones: [Int: String] = [
-                1: "18600646073",
-                2: "19536108230",
-                3: "13723870267"
+                1: "18888888888",
+                2: "18888888888",
+                3: "18888888888"
             ]
-            let fallback = String(format: "1%010d", 7000000000 + idx)
+            let fallback = "18888888888"
             return TestAccount(
                 username: String(format: "test%02d", idx),
                 nickname: String(format: "testnickname%02d", idx),
@@ -265,9 +265,9 @@ final class ClothesUserFlowUITests: XCTestCase {
     func testUserRegistration() throws {
         let app = launchAndGoToSettings()
         let registrations: [(account: TestAccount, phone: String)] = [
-            (TestAccount(username: "test01", nickname: "testnickname01", password: "qwe123", phone: "18600646073"), "18600646073"),
-            (TestAccount(username: "test02", nickname: "testnickname02", password: "qwe123", phone: "19536108230"), "19536108230"),
-            (TestAccount(username: "test03", nickname: "testnickname01", password: "qwe123", phone: "13723870267"), "13723870267"),
+            (TestAccount(username: "test01", nickname: "testnickname01", password: "qwe123", phone: "18888888888"), "18888888888"),
+            (TestAccount(username: "test02", nickname: "testnickname02", password: "qwe123", phone: "18888888888"), "18888888888"),
+            (TestAccount(username: "test03", nickname: "testnickname01", password: "qwe123", phone: "18888888888"), "18888888888"),
         ]
 
         for item in registrations {
