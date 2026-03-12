@@ -103,6 +103,24 @@ struct ExploreService {
         _ = try await send(request, as: ExploreLikeActionResponse.self)
     }
 
+    func fetchFollowingList(token: String, userID: Int64) async throws -> [ExploreUserListItemDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/following"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreUserListResponse.self)
+        return response.users
+    }
+
+    func fetchFollowersList(token: String, userID: Int64) async throws -> [ExploreUserListItemDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/followers"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreUserListResponse.self)
+        return response.users
+    }
+
     private func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -142,4 +160,32 @@ private struct ExploreLikeActionResponse: Codable {
         case outfitID = "outfit_id"
         case isLiked = "is_liked"
     }
+}
+
+struct ExploreUserListResponse: Codable {
+    let users: [ExploreUserListItemDTO]
+}
+
+struct ExploreUserListItemDTO: Codable, Identifiable {
+    let userID: Int64
+    let name: String
+    let handle: String
+    let avatarURL: String?
+    let followersCount: Int64
+    let followingCount: Int64
+    var isFollowing: Bool
+    let isSelf: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case name
+        case handle
+        case avatarURL = "avatar_url"
+        case followersCount = "followers_count"
+        case followingCount = "following_count"
+        case isFollowing = "is_following"
+        case isSelf = "is_self"
+    }
+
+    var id: Int64 { userID }
 }

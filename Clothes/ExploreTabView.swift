@@ -14,6 +14,7 @@ import SwiftUI
 
 struct ExploreTabView: View {
     @AppStorage("auth_token") private var authToken = ""
+    @AppStorage("auth_username") private var authUsername = ""
     @State private var exploreFilter: ExploreFilter = .following
     @State private var searchText = ""
     @State private var creators: [ExploreCreatorDTO] = []
@@ -21,6 +22,10 @@ struct ExploreTabView: View {
     @State private var errorMessage: String?
     @State private var selectedCreatorUserID: Int64?
     @State private var selectedSharedOutfit: ExploreSharedOutfitRoute?
+    @State private var showMyProfile = false
+    @State private var myProfileData: ExploreCreatorDTO?
+    @State private var selectedUserListType: UserListType?
+    @State private var selectedUserListUserID: Int64?
 
     private let service = ExploreService()
 
@@ -30,7 +35,10 @@ struct ExploreTabView: View {
                 Color.white.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: 16) {
-                        ExploreTopBar(selection: $exploreFilter)
+                        ExploreTopBar(
+                            selection: $exploreFilter,
+                            onOpenMyProfile: { Task { await loadMyProfile() } }
+                        )
 
                         ExploreSearchBar(text: $searchText)
                             .padding(.horizontal, 20)
@@ -103,6 +111,42 @@ struct ExploreTabView: View {
                     Text("分享穿搭暂时不可用")
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
+                }
+            }
+            .navigationDestination(isPresented: $showMyProfile) {
+                if let profile = myProfileData {
+                    MyProfileHomeView(
+                        creator: profile,
+                        onOpenOutfit: { outfit in
+                            selectedSharedOutfit = ExploreSharedOutfitRoute(
+                                creatorUserID: profile.userID,
+                                outfitID: outfit.id
+                            )
+                        },
+                        onOpenFollowing: {
+                            selectedUserListType = .following
+                            selectedUserListUserID = profile.userID
+                        },
+                        onOpenFollowers: {
+                            selectedUserListType = .followers
+                            selectedUserListUserID = profile.userID
+                        }
+                    )
+                } else {
+                    Text("个人主页暂时不可用")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+            }
+            .navigationDestination(item: $selectedUserListType) { listType in
+                if let userID = selectedUserListUserID {
+                    ExploreUserListView(
+                        listType: listType,
+                        userID: userID,
+                        onOpenUserProfile: { userID in
+                            selectedCreatorUserID = userID
+                        }
+                    )
                 }
             }
         }
@@ -192,6 +236,30 @@ struct ExploreTabView: View {
         return true
     }
 
+    private func loadMyProfile() async {
+        guard !authToken.isEmpty else {
+            errorMessage = "请先登录后再查看个人主页。"
+            return
+        }
+
+        do {
+            let response = try await service.fetchFeed(
+                token: authToken,
+                mode: "following",
+                keyword: authUsername
+            )
+            if let myProfile = response.creators.first(where: { $0.isSelf }) {
+                myProfileData = myProfile
+                showMyProfile = true
+            } else {
+                errorMessage = "无法加载个人主页，请稍后重试。"
+            }
+        } catch {
+            if handleInvalidTokenIfNeeded(error) { return }
+            errorMessage = "加载个人主页失败：\(error.localizedDescription)"
+        }
+    }
+
     @ViewBuilder
     private var emptyGuideView: some View {
         if exploreFilter == .following {
@@ -232,6 +300,7 @@ struct ExploreTabView: View {
 
 private struct ExploreTopBar: View {
     @Binding var selection: ExploreFilter
+    let onOpenMyProfile: () -> Void
 
     var body: some View {
         HStack {
@@ -240,6 +309,13 @@ private struct ExploreTopBar: View {
                 tabButton(title: "探索更多", value: .trending)
             }
             Spacer()
+            Button(action: onOpenMyProfile) {
+                Image(systemName: "person.circle")
+                    .font(.title2)
+                    .foregroundStyle(Color.black)
+            }
+            .buttonStyle(.appPlain)
+            .accessibilityIdentifier("explore.my.profile.button")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
@@ -477,6 +553,7 @@ private struct ExploreSharedOutfitRoute: Hashable, Identifiable {
 private struct ExploreUserHomeView: View {
     let creator: ExploreCreatorDTO
     let onOpenOutfit: (ExploreOutfitDTO) -> Void
+    @State private var selectedUserListType: UserListType?
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -521,6 +598,13 @@ private struct ExploreUserHomeView: View {
         .background(Color(red: 0.97, green: 0.97, blue: 0.98).ignoresSafeArea())
         .navigationTitle("主页")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $selectedUserListType) { listType in
+            ExploreUserListView(
+                listType: listType,
+                userID: creator.userID,
+                onOpenUserProfile: { _ in }
+            )
+        }
     }
 
     private var headerCard: some View {
@@ -537,9 +621,13 @@ private struct ExploreUserHomeView: View {
                         .font(.title3.weight(.bold))
                         .foregroundStyle(AppTheme.titleText)
                     HStack(spacing: 18) {
-                        statItem(value: creator.followersCount, title: "粉丝")
-                        statItem(value: creator.followingCount, title: "关注")
-                        statItem(value: totalLikes, title: "获赞")
+                        statItem(value: creator.followersCount, title: "粉丝", isClickable: true) {
+                            selectedUserListType = .followers
+                        }
+                        statItem(value: creator.followingCount, title: "关注", isClickable: true) {
+                            selectedUserListType = .following
+                        }
+                        statItem(value: totalLikes, title: "获赞", isClickable: false, action: {})
                     }
                 }
 
@@ -554,14 +642,25 @@ private struct ExploreUserHomeView: View {
         .accessibilityIdentifier("explore.user.home.header")
     }
 
-    private func statItem(value: Int64, title: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private func statItem(value: Int64, title: String, isClickable: Bool, action: @escaping () -> Void) -> some View {
+        let content = VStack(alignment: .leading, spacing: 4) {
             Text("\(value)")
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(AppTheme.titleText)
             Text(title)
                 .font(.caption)
                 .foregroundStyle(AppTheme.secondaryText)
+        }
+
+        if isClickable {
+            return AnyView(
+                Button(action: action) {
+                    content
+                }
+                .buttonStyle(.appPlain)
+            )
+        } else {
+            return AnyView(content)
         }
     }
 }
@@ -804,4 +903,329 @@ private struct ExploreAvatar: View {
 private enum ExploreFilter: String {
     case following
     case trending
+}
+
+enum UserListType: String, Hashable, Identifiable {
+    case following
+    case followers
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .following: return "关注列表"
+        case .followers: return "粉丝列表"
+        }
+    }
+}
+
+private struct MyProfileHomeView: View {
+    let creator: ExploreCreatorDTO
+    let onOpenOutfit: (ExploreOutfitDTO) -> Void
+    let onOpenFollowing: () -> Void
+    let onOpenFollowers: () -> Void
+    @State private var selectedUserListType: UserListType?
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    private var sharedOutfits: [ExploreOutfitDTO] {
+        creator.outfits.filter { $0.shared }
+    }
+
+    private var totalLikes: Int64 {
+        sharedOutfits.reduce(0) { $0 + $1.likeCount }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                headerCard
+
+                if sharedOutfits.isEmpty {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .frame(height: 120)
+                        .overlay(
+                            Text("你还没有分享穿搭")
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.secondaryText)
+                        )
+                } else {
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(sharedOutfits) { outfit in
+                            ExploreUserHomeOutfitTile(
+                                outfit: outfit,
+                                onTap: { onOpenOutfit(outfit) }
+                            )
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 28)
+            .adaptiveContentWidth(maxWidth: 760)
+        }
+        .background(Color(red: 0.97, green: 0.97, blue: 0.98).ignoresSafeArea())
+        .navigationTitle("个人主页")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $selectedUserListType) { listType in
+            ExploreUserListView(
+                listType: listType,
+                userID: creator.userID,
+                onOpenUserProfile: { _ in }
+            )
+        }
+    }
+
+    private var headerCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                ExploreAvatar(
+                    initials: ExploreVisualStyle.initials(from: creator.name),
+                    color: ExploreVisualStyle.avatarColor(from: creator.userID),
+                    size: 68
+                )
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(creator.name)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(AppTheme.titleText)
+                    HStack(spacing: 18) {
+                        statItem(value: creator.followersCount, title: "粉丝") {
+                            selectedUserListType = .followers
+                        }
+                        statItem(value: creator.followingCount, title: "关注") {
+                            selectedUserListType = .following
+                        }
+                        statItem(value: totalLikes, title: "获赞")
+                    }
+                }
+
+                Spacer()
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+        )
+        .accessibilityIdentifier("explore.my.profile.header")
+    }
+
+    private func statItem(value: Int64, title: String, action: (() -> Void)? = nil) -> some View {
+        let content = VStack(alignment: .leading, spacing: 4) {
+            Text("\(value)")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(AppTheme.titleText)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(AppTheme.secondaryText)
+        }
+
+        if let action = action {
+            return AnyView(
+                Button(action: action) {
+                    content
+                }
+                .buttonStyle(.appPlain)
+            )
+        } else {
+            return AnyView(content)
+        }
+    }
+}
+
+struct ExploreUserListView: View {
+    let listType: UserListType
+    let userID: Int64
+    let onOpenUserProfile: (Int64) -> Void
+
+    @AppStorage("auth_token") private var authToken = ""
+    @State private var users: [ExploreUserListItemDTO] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let service = ExploreService()
+
+    var body: some View {
+        List {
+            if isLoading && users.isEmpty {
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView("加载中...")
+                        Spacer()
+                    }
+                    .padding(.vertical, 20)
+                }
+            }
+
+            Section {
+                ForEach(users) { user in
+                    UserListItemRow(
+                        user: user,
+                        onToggleFollow: { Task { await toggleFollow(user: user) } },
+                        onTap: {
+                            if !user.isSelf {
+                                onOpenUserProfile(user.userID)
+                            }
+                        }
+                    )
+                }
+            }
+
+            if !isLoading && users.isEmpty {
+                Section {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.2.slash")
+                            .font(.title2)
+                            .foregroundStyle(Color(red: 0.70, green: 0.66, blue: 0.60))
+                        Text(listType == .following ? "还没有关注任何人" : "还没有粉丝")
+                            .font(.subheadline)
+                            .foregroundStyle(AppTheme.secondaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(listType.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadUsers()
+        }
+        .alert("提示", isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        .refreshable {
+            await loadUsers()
+        }
+    }
+
+    private func loadUsers() async {
+        guard !authToken.isEmpty else {
+            errorMessage = "请先登录"
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let loadedUsers: [ExploreUserListItemDTO]
+            switch listType {
+            case .following:
+                loadedUsers = try await service.fetchFollowingList(token: authToken, userID: userID)
+            case .followers:
+                loadedUsers = try await service.fetchFollowersList(token: authToken, userID: userID)
+            }
+            users = loadedUsers
+        } catch {
+            if let serviceError = error as? ServiceError, serviceError.errno == 1002 {
+                errorMessage = "登录已失效，请重新登录"
+                return
+            }
+            errorMessage = "加载失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func toggleFollow(user: ExploreUserListItemDTO) async {
+        guard let index = users.firstIndex(where: { $0.userID == user.userID }) else { return }
+        let nextState = !users[index].isFollowing
+
+        users[index].isFollowing = nextState
+        users[index].followersCount = max(0, users[index].followersCount + (nextState ? 1 : -1))
+
+        do {
+            try await service.follow(token: authToken, userID: user.userID, isFollowing: nextState)
+        } catch {
+            users[index].isFollowing.toggle()
+            users[index].followersCount += nextState ? -1 : 1
+            if let serviceError = error as? ServiceError, serviceError.errno == 1002 {
+                errorMessage = "登录已失效，请重新登录"
+                return
+            }
+            errorMessage = "更新关注状态失败：\(error.localizedDescription)"
+        }
+    }
+}
+
+private struct UserListItemRow: View {
+    let user: ExploreUserListItemDTO
+    let onToggleFollow: () -> Void
+    let onTap: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    if let avatarURL = user.avatarURL, !avatarURL.isEmpty {
+                        AuthedCachedRemoteImage(
+                            rawPath: avatarURL,
+                            ttl: SharedConstants.remoteImageCacheTTLSeconds,
+                            width: 50,
+                            height: 50,
+                            cornerRadius: 25,
+                            contentMode: .fill
+                        )
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                    } else {
+                        ExploreAvatar(
+                            initials: ExploreVisualStyle.initials(from: user.name),
+                            color: ExploreVisualStyle.avatarColor(from: user.userID),
+                            size: 50
+                        )
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(user.name)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.titleText)
+                        Text("@\(user.handle)")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+                        HStack(spacing: 8) {
+                            Text("\(user.followersCount) 粉丝")
+                                .font(.caption2)
+                                .foregroundStyle(AppTheme.secondaryText)
+                            Text("\(user.followingCount) 关注")
+                                .font(.caption2)
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.appPlain)
+            .disabled(user.isSelf)
+
+            Spacer()
+
+            if user.isSelf {
+                Text("我")
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color(red: 0.93, green: 0.93, blue: 0.95)))
+                    .foregroundStyle(Color(red: 0.22, green: 0.18, blue: 0.14))
+            } else {
+                Button(user.isFollowing ? "已关注" : "关注") {
+                    onToggleFollow()
+                }
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(user.isFollowing ? Color(red: 0.86, green: 0.86, blue: 0.89) : Color(red: 0.14, green: 0.14, blue: 0.14))
+                )
+                .foregroundStyle(user.isFollowing ? Color.black : Color.white)
+            }
+        }
+        .padding(.vertical, 4)
+    }
 }
