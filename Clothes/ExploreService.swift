@@ -8,6 +8,7 @@
 //
 //  Created by Codex on 2026/2/7.
 //  Updated by Codex on 2026/3/5: 修复 follow/like 请求缺少 /api/v1 前缀导致 404。
+//  Updated by Codex on 2026/3/12: 新增个人主页、关注列表、粉丝列表接口。
 //
 
 import Foundation
@@ -38,6 +39,56 @@ struct ExploreCreatorDTO: Codable, Identifiable {
     }
 
     var id: Int64 { userID }
+}
+
+struct ExploreMyProfileDTO: Codable, Identifiable {
+    let userID: Int64
+    let name: String
+    let handle: String
+    let followersCount: Int64
+    let followingCount: Int64
+    let likeCount: Int64
+    let avatarURL: String?
+    var outfits: [ExploreOutfitDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case name
+        case handle
+        case followersCount = "followers_count"
+        case followingCount = "following_count"
+        case likeCount = "like_count"
+        case avatarURL = "avatar_url"
+        case outfits
+    }
+
+    var id: Int64 { userID }
+}
+
+struct ExploreFollowUserDTO: Codable, Identifiable {
+    let userID: Int64
+    let name: String
+    let handle: String
+    let followersCount: Int64
+    let followingCount: Int64
+    let avatarURL: String?
+    var isFollowing: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case name
+        case handle
+        case followersCount = "followers_count"
+        case followingCount = "following_count"
+        case avatarURL = "avatar_url"
+        case isFollowing = "is_following"
+    }
+
+    var id: Int64 { userID }
+}
+
+struct ExploreFollowListResponse: Codable {
+    let users: [ExploreFollowUserDTO]
 }
 
 struct ExploreOutfitDTO: Codable, Identifiable {
@@ -101,6 +152,31 @@ struct ExploreService {
         request.httpMethod = isLiked ? "POST" : "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         _ = try await send(request, as: ExploreLikeActionResponse.self)
+    }
+
+    func fetchMyProfile(token: String) async throws -> ExploreMyProfileDTO {
+        var request = URLRequest(url: baseURL.appendingPathComponent("api/v1/explore/me"))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await send(request, as: ExploreMyProfileDTO.self)
+    }
+
+    func fetchFollowing(token: String, userID: Int64) async throws -> [ExploreFollowUserDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/following"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreFollowListResponse.self)
+        return response.users
+    }
+
+    func fetchFollowers(token: String, userID: Int64) async throws -> [ExploreFollowUserDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/followers"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreFollowListResponse.self)
+        return response.users
     }
 
     private func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {
