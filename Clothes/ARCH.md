@@ -1,0 +1,43 @@
+> 一旦我所属的文件夹有所变化，请更新我。
+文件夹：Clothes｜地位：iOS 主应用核心目录
+功能：实现页面/状态/网络与端内能力，并已重构为"手机号短信登录（新用户自动注册）+ 用户名/手机号密码登录 + 设置页修改密码/短信找回密码"认证流程
+最近更新：
+- 补充了主页面状态处理、环境配置读取与共享常量路径解析相关实现
+- 2026-02-28: 注册页面输入框placeholder文字颜色改为灰色（InputFieldStyle.swift, ProfileRegistrationFlowView.swift）
+- 2026-03-01: `ProfileAuthViews.swift` 移除登录页注册入口，验证码输入数字改为黑色，并增强 iOS 短信验证码自动回填能力（`.oneTimeCode` 焦点输入框优化）。
+- 2026-03-01: `ClothesAPIService.swift` 的认证响应新增 `is_new_user` 解码；`ProfileTabView(+Actions).swift` 新增新用户资料完善引导弹窗与保存逻辑。
+- 2026-03-01: `ProfileTabComponents.swift` 账号切换面板移除"注册账号"入口，仅保留登录入口。
+- 2026-03-02: `ProfileAuthViews.swift` 新增分步式 `PasswordResetSheet`（手机号->验证码->新密码）与输入限制/倒计时/密码规则提示；`ProfileTabView.swift` 切换为新组件；`UserAuthService.swift` 新增 `/auth/password-reset/sms/send|verify|confirm` 三段式接口调用。
+- 2026-03-02: `ProfileAuthViews.swift` 登录页移除"忘记密码"入口并新增 `ChangePasswordSheet`（新密码+确认）；`ProfileTabView.swift` 在系统设置新增“修改密码”“忘记密码（短信验证码）”入口；`UserAuthService.swift` 新增 `PUT /auth/password` 调用。
+- 2026-03-02: `ProfileTabView.swift` 未登录态恢复 `RegistrationPrompt` 注册入口并重新接入 `RegistrationFlowView` 弹窗，保证真机 UITest 可触发短信注册链路。
+- 2026-03-02: `ProfileTabView.swift` 未登录态移除“注册/已有账号登录”区块，仅保留登录入口；系统设置移除直改密码入口，“忘记密码（短信验证码）”改文案为“修改密码（短信验证码）”且流程不变。`ProfileAuthViews.swift` 将协议确认从 Switch 改为单选按钮，并把短信新用户资料补全改为“下一步”分步流程；`ProfileTabView+Actions.swift` 仅对 `is_new_user` 弹补全资料，已存在用户不再弹。`ProfileTabComponents.swift` 统一基础资料编辑浮层为浅色风格；`ProfileRegistrationFlowView.swift` 改为 3 步式注册页（验证码 -> 账号 -> 资料）。
+- 2026-03-02: `ProfileTabView.swift` 未登录态改为内联”手机号+验证码+协议”登录卡片（仅验证码登录），并移除用户名密码登录入口与相关弹窗；系统设置继续去除直改密码入口。`ProfileTabView+Actions.swift` 账号切换时不再清空头像，新增切换后回拉 profile（含 avatar_url）并更新本地账号缓存；头像上传成功后立即同步写入账号缓存，修复多账号来回切换头像丢失问题。`UserAuthService.swift` 的 `UserProfile` 新增 `avatar_url/avatarURL` 解码字段。
+- 2026-03-03: `AIVirtualTryOnService.swift` 修复 `BackgroundRemovalImage` Codable 协议实现，将 `GenerationResponse`、`GeneratedImage`、`BackgroundRemovalImage` 从 `Codable` 改为 `Decodable`（这些结构体只用于解码 API 响应，无需编码），解决编译错误。
+- 2026-03-03: `ProfileTabComponents.swift` 账号切换列表改为优先展示真实头像（`profileAvatar`），昵称展示回退链统一为 `profileNickname -> profileName -> username`，修复切换账号页头像/昵称显示不准。
+- 2026-03-03: `ProfileTabView.swift` + `ProfileTabView+Actions.swift` 设置页资料编辑弹层关闭后自动触发资料保存；昵称不再只改本地状态，改为同步 `updateProfile` 并回填本地缓存，修复“修改昵称不生效/刷新回滚”。
+- 2026-03-03: `UserAuthService.swift` + `ProfileTabView.swift` + `ProfileTabView+Actions.swift` 性别链路统一支持 `3/中性/neutral/non-binary`，并兼容后端 `gender` 数字解码，修复新用户选择“中性”后展示为“未填写”。
+- 2026-03-03: `OutfitsTabView.swift` + `TryOnTabView.swift` 试穿失败补齐结构化错误上报（`F0005`，含 `errno`、输入规模、错误类型等上下文），并在用户提示中展示可排查错误信息。
+- 2026-03-03: 把试穿错误上报公共逻辑抽到 `TryOnErrorReporting.swift`，`OutfitsTabView.swift` 与 `TryOnTabView.swift` 改为单点调用，保持错误上下文不变同时避免历史超限文件继续膨胀。
+- 2026-03-03: `AIVirtualTryOnService.swift` 图像生成响应改为宽松解码（`model/created` 可缺省，兼容 `data/images/output/url/image_url` 多形态），修复 `keyNotFound(model)` 导致的“Outfit preview generation failed”。
+- 2026-03-03: `ProfileTabView.swift` 在未登录状态添加"注册新账号"按钮（`profile.register.button`），并接入 `RegistrationFlowView` 弹窗，修复 UITest 注册按钮缺失问题；添加 `.onAppear` 强制同步 UserDefaults 中的 `auth_token` 到 `@AppStorage`，解决 UITest 模式下 `-resetAuth` 清除的登录状态不同步问题。
+- 2026-03-03: `AIVirtualTryOnService.swift` 进一步兼容 `b64_json/image_base64/base64` 等非 URL 结果（落盘临时文件回传 URL）与原始 payload 递归兜底解析，修复 `TryOnError.noResult` 场景。
+- 2026-03-03: `ProfileTabView+Actions.swift` 登录成功后优先回填本地缓存头像，并将头像下载 URL 解析改为支持相对路径（`SharedConstants.resolvedImageURL`），修复“已有头像账号退出再登录头像不显示”。
+- 2026-03-03: `AIVirtualTryOnService.swift` 增加对 `data.error` 等嵌套错误结构的提取（并在 URL 下载失败时触发 inline base64 兜底），同时补充“任意层级 URL/base64 候选”解析，修复响应非标准字段时被误判为 `noResult`。
+- 2026-03-03: `ProfileTabComponents.swift` 的 `StoredAccount` 改为向后兼容解码（历史缺字段默认值兜底，避免解码失败清空账号缓存）；`ProfileTabView+Actions.swift` 头像下载请求补齐 `Authorization` 头，修复受保护头像资源在重新登录后不显示问题。
+- 2026-03-03: 将 `AIVirtualTryOnService.swift` 的请求/响应模型与 `TryOnError` 拆分到新文件 `AIVirtualTryOnModels.swift`，避免核心服务文件继续超长，保持规则检查可通过。
+- 2026-03-05: `ProfileAuthViews.swift` Apple 登录入口改为仅图标样式；`ProfileTabView+Actions.swift` 头像回填改为“下载失败保留本地缓存”避免切号后头像被清空；`OutfitsTabView.swift` 公开穿搭前先补同步获取 `serverOutfitID` 并将含 `aiTryOnImageData` 的记录跳转到 AI 试衣详情；`TryOnTabView.swift` 试衣模特改为按账号隔离存储、账号切换自动重载，AI 试衣生成结果同步写入 `imageData` 并触发同步，`TryOnModelSheet` 增加生成动画与倒计时进度提示。
+- 2026-03-05: `OutfitsTabView.swift` 公开穿搭新增 `serverOutfitID` 兜底恢复（通过远端穿搭匹配回填 ID）并在无法回填时展示同步失败原因，减少“已保存却提示未保存”；`ProfileTabView+Actions.swift` 切账号前强制落库当前账号头像，并在打开切换面板后按账号 token 回补缺失头像缓存，修复切账号列表头像偶发不展示。
+- 2026-03-05: `OutfitsTabView.swift` 公开状态切换调整为“仅在缺少 `serverOutfitID` 时触发穿搭同步”，避免旧服务端 `PUT /outfits/:id` 校验差异阻断公开；`ClothesAPIService.swift` 为创建/更新穿搭增加 legacy 请求体回退（`name/clothing_ids`）兼容老后端。`ProfileTabView.swift` + `ProfileTabView+Actions.swift` 新增 `switcherAccounts` 动态数据源，确保切换账号弹窗在异步头像补齐后实时刷新头像。
+- 2026-03-05: `ProfileTabComponents.swift` 的账号切换列表展示改为固定字段：头像 + 昵称 + 登录用户名（手机号），不再把昵称位置回退显示为用户名，便于用户核对当前账号身份。
+- 2026-03-05: `ExploreTabView.swift` 探索页顶部移除“我的主页”入口及对应弹层逻辑，只保留“我的关注/探索更多”主流列表；`ProfileTabComponents.swift` 账号切换列表升级为卡片化样式并强化“登录用户名（手机号）”展示，提升可读性。
+- 2026-03-05: `ExploreService.swift` 修复探索页 follow/like 请求路径，补上 `/api/v1` 前缀（`/api/v1/explore/users/:id/follow`、`/api/v1/explore/outfits/:id/like`），解决点击关注/点赞返回 404。
+- 2026-03-05: `ProfileTabComponents.swift` 账号切换弹层列表行隐藏系统分隔线（`listRowSeparator(.hidden)`），去掉每行之间的横线，保持卡片样式一致。
+- 2026-03-05: `ExploreTabView.swift` 探索列表卡片改为“穿搭效果图大图卡片”（更接近穿搭列表视觉）；新增头像跳转“他人主页”（仅展示其已分享穿搭）与穿搭点击跳转“分享详情页”，详情页预留评论区占位用于下期扩展。
+- 2026-03-05: `ExploreTabView.swift` 进一步按视觉稿优化：他人主页移除手机号（`@handle`）显示并将“粉丝/关注/获赞”放到头像右侧信息区；探索卡片/主页卡片/详情页补充“衣服缩略图条”，原先 `0226` 位置改为按 `created_at` 渲染的 `MMdd` 时间码。
+- 2026-03-05: `ExploreTabView.swift` 补充探索链路的 UITest 定位标识（筛选按钮、搜索框、创作者入口、穿搭卡片/衣服条、他人主页头部与详情根节点），用于稳定覆盖“他人主页不展示手机号 + 分享详情链路”回归验证。
+- 2026-03-06: `ProfileTabView.swift` 调整线上设置页可见性：`online` 环境默认隐藏“环境设置/数据管理”，在“我的”区域连续点击 8 次后持久化解锁，并提示刷新页面后展示两个模块；`dev` 环境保持默认可见。
+- 2026-03-06: `ProfileAuthViews.swift` 与 `ProfileTabView.swift` 暂时移除 Apple 登录入口（登录页图标入口与短信内联卡片苹果按钮隐藏），仅保留手机号验证码登录路径，便于后续按需恢复。
+- 2026-03-06: `EnvironmentManager.swift` 首次启动默认环境从 `dev` 改为 `online`，并在读取到历史 `dev` 持久化值时自动迁移到 `online`；同时调整环境选择器默认值为 `online`，用于线上短信与上线验证链路。
+- 2026-03-06: `ProfileAuthViews.swift` 的短信登录链路新增网络离线识别：发送验证码失败时给出“无线局域网与蜂窝网络”权限指引，并支持一键跳转系统设置页（`UIApplication.openSettingsURLString`）。
+- 2026-03-06: `ProfileTabView+Actions.swift` 与 `ProfileRegistrationFlowView.swift` 将短信注册默认昵称从手机号改为 `穿起来<uid>`（无 uid 时退回 `穿起来用户`），并同步调整注册页文案，避免手机号出现在公开昵称位。
+- 2026-03-07: `IAPManager.swift` 抽出共享充值商品目录，`ProfileWalletViews.swift` 改为优先展示 StoreKit `displayPrice`；仅 `dev + DEBUG` 保留后端直充兜底，`online` 强制走正式商品与 Apple 内购流程。

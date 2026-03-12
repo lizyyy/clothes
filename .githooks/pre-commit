@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 文件input：git pre-commit 生命周期、仓库质量检查脚本
+# 文件output：提交前规范校验结果与阻断退出码
+# 文件pos：仓库级提交门禁入口
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 ARCH.md。
+set -euo pipefail
+python3 scripts/check_project_rules.py

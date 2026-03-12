@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>穿起来 App UE预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2E231C;
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: #948575;
+            font-size: 14px;
+        }
+        .screens-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .screen-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .screen-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .screen-subtitle {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 10px;
+            text-align: center;
+            max-width: 300px;
+        }
+        .phone {
+            width: 320px;
+            height: 680px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #1a1a1a;
+        }
+        .status-bar {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px 0 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            position: relative;
+        }
+        .status-time {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .signal-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 1.5px;
+            height: 12px;
+        }
+        .signal-bar {
+            width: 3px;
+            background: #000;
+            border-radius: 0.5px;
+        }
+        .signal-bar:nth-child(1) { height: 4px; }
+        .signal-bar:nth-child(2) { height: 6px; }
+        .signal-bar:nth-child(3) { height: 8px; }
+        .signal-bar:nth-child(4) { height: 10px; }
+        .wifi-icon {
+            width: 14px;
+            height: 10px;
+            position: relative;
+        }
+        .wifi-arc {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1.5px solid #000;
+            border-bottom: none;
+            border-radius: 50% 50% 0 0;
+        }
+        .wifi-arc:nth-child(1) { width: 4px; height: 2px; }
+        .wifi-arc:nth-child(2) { width: 8px; height: 4px; }
+        .wifi-arc:nth-child(3) { width: 12px; height: 6px; }
+        .wifi-dot {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 3px;
+            background: #000;
+            border-radius: 50%;
+        }
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .battery-body {
+            width: 22px;
+            height: 11px;
+            border: 1px solid #000;
+            border-radius: 2.5px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 1.5px;
+        }
+        .battery-level {
+            width: 70%;
+            height: 100%;
+            background: #000;
+            border-radius: 1px;
+        }
+        .battery-cap {
+            width: 1.5px;
+            height: 5px;
+            background: #000;
+            border-radius: 0 1px 1px 0;
+        }
+        .content {
+            height: calc(100% - 44px - 83px);
+            overflow-y: auto;
+            background: white;
+        }
+        .nav-bar {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 0.5px solid #E5E5E5;
+        }
+        .nav-btn {
+            font-size: 15px;
+            color: #5C4A3A;
+        }
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            height: 83px;
+            background: white;
+            border-top: 0.5px solid #E5E5E5;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 8px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .tab-icon { font-size: 22px; }
+        .tab-label { font-size: 10px; }
+        .tab-item.active { color: #2F2F2F; }
+        .tab-item:not(.active) { color: rgba(47, 47, 47, 0.4); }
+
+        /* 1. 衣橱页 */
+        .wardrobe-header {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-size: 30px;
+            font-weight: 600;
+            color: #333;
+        }
+        .header-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .pill-btn {
+            padding: 5px 8px;
+            background: rgba(47, 47, 47, 0.12);
+            border-radius: 16px;
+            font-size: 9px;
+            color: #2F2F2F;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            white-space: nowrap;
+        }
+        .control-bar {
+            padding: 8px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .primary-pill {
+            background: #2F2F2F;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 22px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .sort-pills {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .sort-pill {
+            padding: 6px 10px;
+            border-radius: 16px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .sort-pill.active {
+            background: #2F2F2F;
+            color: white;
+        }
+        .sort-pill:not(.active) {
+            background: white;
+            color: #666;
+            border: 1px solid #D4D0C8;
+        }
+        .search-bar {
+            margin: 8px 16px;
+            height: 36px;
+            background: #F5F5F5;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            color: #999;
+            font-size: 14px;
+        }
+        .category-tabs {
+            display: flex;
+            padding: 8px 16px;
+            gap: 8px;
+            overflow-x: auto;
+        }
+        .category-tab {
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .category-tab.active {
+            background: #2F2F2F;
+            color: white;
+        }
+        .category-tab:not(.active) {
+            background: white;
+            color: #5C4A3A;
+            border: 1px solid #E5E5E5;
+        }
+        .item-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 16px;
+        }
+        .item-card {
+            aspect-ratio: 1;
+            background: #F8F8F8;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        .item-name {
+            font-size: 13px;
+            color: #2E231C;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .item-category {
+            font-size: 11px;
+            color: #948575;
+        }
+
+        /* 2. 搭配页 */
+        .outfits-header {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .outfits-title {
+            font-size: 26px;
+            font-weight: 600;
+            color: #2E231C;
+        }
+        .location-weather {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .location-pill, .weather-pill {
+            padding: 4px 10px;
+            background: white;
+            border-radius: 16px;
+            font-size: 12px;
+            color: #666;
+            border: 1px solid #E5E5E5;
+        }
+        .weather-card {
+            margin: 0 16px 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            color: white;
+        }
+        .weather-temp {
+            font-size: 32px;
+            font-weight: 600;
+        }
+        .weather-greeting {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        .section-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #3D3329;
+        }
+        .add-btn {
+            background: #2F2F2F;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 16px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+        .filter-pills {
+            display: flex;
+            gap: 10px;
+            padding: 0 16px 12px;
+        }
+        .filter-pill {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        .filter-pill.active {
+            background: #2F2F2F;
+            color: white;
+        }
+        .filter-pill:not(.active) {
+            background: white;
+            color: #666;
+            border: 1px solid #E5E5E5;
+        }
+        .outfit-card {
+            margin: 0 16px 12px;
+            background: #F8F8F8;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .outfit-preview {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 36px;
+            background: #FFF;
+            position: relative;
+        }
+        .outfit-preview-tag {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+        }
+        .outfit-info {
+            padding: 12px 16px;
+        }
+        .outfit-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2E231C;
+        }
+        .outfit-meta {
+            font-size: 12px;
+            color: #948575;
+            margin-top: 4px;
+        }
+        .outfit-items {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .outfit-item-thumb {
+            width: 28px;
+            height: 28px;
+            background: #EEE;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* 3. 探索页 */
+        .explore-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+        }
+        .explore-tabs {
+            display: flex;
+            gap: 16px;
+        }
+        .explore-tab {
+            font-size: 18px;
+            font-weight: 400;
+            color: #999;
+            white-space: nowrap;
+        }
+        .explore-tab.active {
+            font-weight: 600;
+            color: #000;
+        }
+        .my-profile-btn {
+            padding: 6px 10px;
+            background: white;
+            border: 1px solid #D4D0C8;
+            border-radius: 16px;
+            font-size: 10px;
+            color: #333;
+            white-space: nowrap;
+        }
+        .search-bar-explore {
+            margin: 8px 16px;
+            height: 40px;
+            background: #F5F5F7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            color: #999;
+            font-size: 14px;
+        }
+        .creator-card {
+            margin: 12px 16px;
+            padding: 14px;
+            background: #F8F8F8;
+            border-radius: 16px;
+        }
+        .creator-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .creator-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .creator-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        .creator-name-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+        .creator-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .creator-handle {
+            font-size: 12px;
+            color: #999;
+        }
+        .follow-btn {
+            padding: 5px 12px;
+            background: #2F2F2F;
+            color: white;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .follow-btn.following {
+            background: #E5E5E5;
+            color: #666;
+        }
+        .follow-btn.self {
+            background: #F0F0F0;
+            color: #666;
+        }
+        .creator-outfits {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .outfit-thumb {
+            width: 80px;
+            height: 80px;
+            background: #EEE;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        .creator-stats {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 4. 我的页面 */
+        .profile-header {
+            padding: 20px;
+            text-align: center;
+        }
+        .profile-title {
+            font-size: 26px;
+            font-weight: 600;
+            color: #2E231C;
+            margin-bottom: 20px;
+            font-family: Georgia, serif;
+        }
+        .profile-avatar-large {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 50%, #FECFEF 100%);
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            border: 3px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2E231C;
+        }
+        .wallet-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 16px 16px;
+            padding: 14px 16px;
+            background: #F8F8F8;
+            border-radius: 16px;
+        }
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .wallet-icon {
+            font-size: 18px;
+        }
+        .wallet-text {
+            font-size: 14px;
+            color: #3D3329;
+        }
+        .wallet-amount {
+            font-weight: 600;
+        }
+        .recharge-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #2F2F2F 0%, #4A3B2A 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .section-label {
+            padding: 12px 16px 8px;
+            font-size: 11px;
+            color: #948575;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .settings-list {
+            padding: 0 16px;
+        }
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: white;
+            border-radius: 14px;
+            margin-bottom: 8px;
+            font-size: 15px;
+            border: 1px solid #F0F0F0;
+        }
+        .settings-label {
+            color: #3D3329;
+        }
+        .settings-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #948575;
+            font-size: 14px;
+        }
+        .logout-btn {
+            margin: 20px 16px;
+            padding: 14px;
+            text-align: center;
+            color: #FF3B30;
+            font-size: 15px;
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #FFE5E5;
+        }
+
+        /* 5. 充值页面 */
+        .recharge-header {
+            padding: 16px;
+            margin: 0 16px 12px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #F0F0F0;
+        }
+        .recharge-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2E231C;
+            margin-bottom: 8px;
+        }
+        .recharge-subtitle {
+            font-size: 13px;
+            color: #948575;
+        }
+        .recharge-rate {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .package-card {
+            margin: 0 16px 10px;
+            padding: 14px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #E5E5E5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .package-card.selected {
+            background: #FDF6ED;
+            border-color: #C4956A;
+        }
+        .package-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .package-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .package-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2E231C;
+        }
+        .package-badge {
+            padding: 2px 8px;
+            background: #F5E6D3;
+            color: #8B6914;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .package-subtitle {
+            font-size: 12px;
+            color: #999;
+        }
+        .package-price-info {
+            text-align: right;
+        }
+        .package-coins {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2E231C;
+        }
+        .package-price {
+            font-size: 13px;
+            color: #C4956A;
+        }
+        .recharge-submit-btn {
+            margin: 16px;
+            padding: 16px;
+            background: #2F2F2F;
+            color: white;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        /* 6. 服饰详情页 */
+        .detail-photo {
+            margin: 16px;
+            height: 280px;
+            background: #F5F5F5;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            position: relative;
+        }
+        .detail-photo-actions {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+        .photo-action-btn {
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 14px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        .wear-count {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 14px;
+            font-size: 11px;
+        }
+        .detail-tabs {
+            display: flex;
+            margin: 0 16px;
+            border-bottom: 1px solid #E5E5E5;
+        }
+        .detail-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-size: 15px;
+            color: #999;
+        }
+        .detail-tab.active {
+            color: #2E231C;
+            font-weight: 600;
+            border-bottom: 2px solid #2E231C;
+        }
+        .detail-section {
+            padding: 16px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .detail-row-title {
+            font-size: 15px;
+            color: #666;
+        }
+        .detail-row-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: #2E231C;
+            font-weight: 500;
+        }
+        .value-capsule {
+            padding: 6px 14px;
+            background: #F5F5F5;
+            border-radius: 14px;
+            font-size: 13px;
+        }
+
+        /* 7. AI场景搭配 */
+        .create-container {
+            padding: 40px 20px;
+            min-height: 100%;
+        }
+        .feature-card {
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feature-card.gray {
+            background: #F0F0F8;
+        }
+        .feature-card.purple {
+            background: linear-gradient(135deg, #5C5EC8 0%, #4A4BA0 100%);
+            color: white;
+        }
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .feature-subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        .feature-card.gray .feature-icon {
+            background: white;
+        }
+        .feature-card.purple .feature-icon {
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* 8. 添加衣物 */
+        .add-clothing-title {
+            font-size: 26px;
+            font-weight: 600;
+            color: #2E231C;
+            margin-bottom: 8px;
+            font-family: Georgia, serif;
+            text-align: center;
+        }
+        .add-clothing-subtitle {
+            font-size: 14px;
+            color: #948575;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .action-card {
+            padding: 16px;
+            background: #F8F8F8;
+            border-radius: 14px;
+            margin: 0 16px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .action-card-primary {
+            background: #2F2F2F;
+            color: white;
+        }
+        .action-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .action-info p {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* 9. AI试衣 */
+        .model-preview {
+            margin: 16px;
+            padding: 24px;
+            background: #F8F8F8;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .model-placeholder {
+            width: 120px;
+            height: 160px;
+            background: #E0E0E0;
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        .action-pills {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px;
+            margin-bottom: 16px;
+        }
+        .action-pill {
+            flex: 1;
+            padding: 8px 6px;
+            background: white;
+            border-radius: 20px;
+            font-size: 10px;
+            text-align: center;
+            border: 1px solid #E5E5E5;
+            white-space: nowrap;
+        }
+        .section-tabs {
+            display: flex;
+            padding: 0 16px;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .section-tab {
+            flex: 1;
+            padding: 10px 6px;
+            border-radius: 22px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .section-tab.active {
+            background: #2F2F2F;
+            color: white;
+        }
+        .section-tab:not(.active) {
+            background: white;
+            color: #5C4A3A;
+            border: 1px solid #D4D0C8;
+        }
+        .scene-selector {
+            padding: 0 16px;
+            margin-bottom: 16px;
+        }
+        .scene-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .scene-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .scene-tag {
+            padding: 6px 12px;
+            background: white;
+            border-radius: 16px;
+            font-size: 12px;
+            border: 1px solid #E5E5E5;
+            white-space: nowrap;
+        }
+        .scene-tag.active {
+            background: #2F2F2F;
+            color: white;
+            border-color: #2F2F2F;
+        }
+        .generate-btn {
+            margin: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, #5C5EC8 0%, #4A4BA0 100%);
+            color: white;
+            border-radius: 14px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .generate-btn small {
+            display: block;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>穿起来 App UE预览</h1>
+        <p>基于实际代码逻辑的完整UI效果图</p>
+    </div>
+
+    <div class="screens-container">
+        <!-- 1. 衣橱页 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">1. 衣橱 (WardrobeTabView)</div>
+            <div class="screen-subtitle">管理衣物、分类浏览、批量编辑、回收站</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="wardrobe-header">
+                        <div class="page-title">衣橱</div>
+                        <div class="header-actions">
+                            <div class="pill-btn">🗑 回收站</div>
+                            <div class="pill-btn">✏️ 编辑</div>
+                            <div class="pill-btn">🛍 逛服装库</div>
+                        </div>
+                    </div>
+                    <div class="control-bar">
+                        <div class="primary-pill">➕ 添加衣物</div>
+                        <div class="sort-pills">
+                            <div class="sort-pill active">按添加时间</div>
+                            <div class="sort-pill">按使用频率</div>
+                        </div>
+                    </div>
+                    <div class="search-bar">🔍 搜索衣物</div>
+                    <div class="category-tabs">
+                        <div class="category-tab active">全部</div>
+                        <div class="category-tab">上衣</div>
+                        <div class="category-tab">裤子</div>
+                        <div class="category-tab">裙子</div>
+                        <div class="category-tab">外套</div>
+                        <div class="category-tab">鞋靴</div>
+                    </div>
+                    <div class="item-grid">
+                        <div class="item-card">
+                            👕
+                            <span class="item-name">黑色毛衣</span>
+                            <span class="item-category">上衣</span>
+                        </div>
+                        <div class="item-card">
+                            👔
+                            <span class="item-name">白衬衫</span>
+                            <span class="item-category">上衣</span>
+                        </div>
+                        <div class="item-card">
+                            👖
+                            <span class="item-name">蓝色牛仔裤</span>
+                            <span class="item-category">裤子</span>
+                        </div>
+                        <div class="item-card">
+                            🧥
+                            <span class="item-name">卡其外套</span>
+                            <span class="item-category">外套</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item active">
+                        <span class="tab-icon">⊞</span>
+                        <span class="tab-label">衣橱</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">▭</span>
+                        <span class="tab-label">搭配</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">⊕</span>
+                        <span class="tab-label">AI</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">✦</span>
+                        <span class="tab-label">探索</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">◉</span>
+                        <span class="tab-label">设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 搭配页 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">2. 搭配 (OutfitsTabView)</div>
+            <div class="screen-subtitle">天气卡片、穿搭记录、AI搭配/我的搭配筛选</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="outfits-header" style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+                        <div class="outfits-title">搭配</div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div class="location-pill" style="padding:4px 10px;background:rgba(255,255,255,0.9);border-radius:16px;font-size:12px;color:#948575;display:flex;align-items:center;gap:4px">上海 ▼</div>
+                            <div class="weather-pill" style="padding:4px 10px;background:rgba(255,255,255,0.9);border-radius:16px;font-size:12px;color:#948575">🌤 晴 12°C</div>
+                            <div style="width:32px;height:32px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">📅</div>
+                            <div class="pill-btn">🗑 回收站</div>
+                        </div>
+                    </div>
+                    <div class="section-header">
+                        <div class="section-title">穿搭记录</div>
+                        <div class="add-btn">+ 添加穿搭</div>
+                    </div>
+                    <div class="filter-pills">
+                        <div class="filter-pill active">全部</div>
+                        <div class="filter-pill">我的搭配</div>
+                        <div class="filter-pill">AI搭配</div>
+                    </div>
+                    <div class="outfit-card">
+                        <div class="outfit-preview">
+                            👕 👖 👟
+                            <span class="outfit-preview-tag">已生成试穿图</span>
+                        </div>
+                        <div class="outfit-info">
+                            <div class="outfit-title">春季休闲搭配</div>
+                            <div class="outfit-meta">3件单品 · 创建于今天</div>
+                            <div class="outfit-items">
+                                <div class="outfit-item-thumb">👕</div>
+                                <div class="outfit-item-thumb">👖</div>
+                                <div class="outfit-item-thumb">👟</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="outfit-card">
+                        <div class="outfit-preview">
+                            👗 🧥 👠
+                            <span class="outfit-preview-tag">尚未生成试穿效果图</span>
+                        </div>
+                        <div class="outfit-info">
+                            <div class="outfit-title">AI推荐-商务通勤</div>
+                            <div class="outfit-meta">4件单品 · 创建于昨天</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item">
+                        <span class="tab-icon">⊞</span>
+                        <span class="tab-label">衣橱</span>
+                    </div>
+                    <div class="tab-item active">
+                        <span class="tab-icon">▭</span>
+                        <span class="tab-label">搭配</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">⊕</span>
+                        <span class="tab-label">AI</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">✦</span>
+                        <span class="tab-label">探索</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">◉</span>
+                        <span class="tab-label">设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 探索页 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">3. 探索 (ExploreTabView)</div>
+            <div class="screen-subtitle">关注/推荐切换、搜索创作者、关注按钮、我的主页入口</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="explore-topbar">
+                        <div class="explore-tabs">
+                            <div class="explore-tab active">我的关注</div>
+                            <div class="explore-tab">探索更多</div>
+                        </div>
+                        <div class="my-profile-btn">👤 我的主页</div>
+                    </div>
+                    <div class="search-bar-explore">🔍 搜索用户昵称或邮箱</div>
+                    <div class="creator-card">
+                        <div class="creator-header">
+                            <div class="creator-info">
+                                <div class="creator-avatar">👩</div>
+                                <div class="creator-name-wrap">
+                                    <div class="creator-name">时尚达人小美</div>
+                                    <div class="creator-handle">@xiaomei · 1.2k 粉丝</div>
+                                </div>
+                            </div>
+                            <div class="follow-btn">+ 关注</div>
+                        </div>
+                        <div class="creator-outfits">
+                            <div class="outfit-thumb">👗</div>
+                            <div class="outfit-thumb">👔</div>
+                            <div class="outfit-thumb">🧥</div>
+                        </div>
+                        <div class="creator-stats">♡ 128 · 👁 2.3k 浏览</div>
+                    </div>
+                    <div class="creator-card">
+                        <div class="creator-header">
+                            <div class="creator-info">
+                                <div class="creator-avatar" style="background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">👨</div>
+                                <div class="creator-name-wrap">
+                                    <div class="creator-name">穿搭博主阿强</div>
+                                    <div class="creator-handle">@qiangge · 856 粉丝</div>
+                                </div>
+                            </div>
+                            <div class="follow-btn following">已关注</div>
+                        </div>
+                        <div class="creator-outfits">
+                            <div class="outfit-thumb">👕</div>
+                            <div class="outfit-thumb">👖</div>
+                        </div>
+                        <div class="creator-stats">♡ 89 · 👁 1.1k 浏览</div>
+                    </div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item">
+                        <span class="tab-icon">⊞</span>
+                        <span class="tab-label">衣橱</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">▭</span>
+                        <span class="tab-label">搭配</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">⊕</span>
+                        <span class="tab-label">AI</span>
+                    </div>
+                    <div class="tab-item active">
+                        <span class="tab-icon">✦</span>
+                        <span class="tab-label">探索</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">◉</span>
+                        <span class="tab-label">设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 我的页面 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">4. 我的 (ProfileTabView)</div>
+            <div class="screen-subtitle">穿贝余额、基本信息、系统设置、同步草稿箱</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="profile-header">
+                        <div class="profile-title">我的</div>
+                        <div class="profile-avatar-large">👩</div>
+                        <div class="profile-name">小贝</div>
+                    </div>
+                    <div class="wallet-section">
+                        <div class="wallet-info">
+                            <span class="wallet-icon">💳</span>
+                            <span class="wallet-text">穿贝 <span class="wallet-amount">128</span></span>
+                        </div>
+                        <div class="recharge-btn">充值穿贝</div>
+                    </div>
+                    <div class="section-label">────── 基本信息 ──────</div>
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <span class="settings-label">昵称</span>
+                            <div class="settings-value">小贝 ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">登录用户名</span>
+                            <div class="settings-value">xiaobei2024 ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">性别</span>
+                            <div class="settings-value">女 ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">身高</span>
+                            <div class="settings-value">165 cm ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">体重</span>
+                            <div class="settings-value">52 kg ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">星座</span>
+                            <div class="settings-value">双子座 ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">MBTI</span>
+                            <div class="settings-value">ENFP ></div>
+                        </div>
+                        <div class="settings-item">
+                            <span class="settings-label">色系</span>
+                            <div class="settings-value">奶油/驼/黑白 ></div>
+                        </div>
+                    </div>
+                    <div class="section-label">────── 系统设置 ──────</div>
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <span class="settings-label">切换账号</span>
+                            <div class="settings-value">👥 ></div>
+                        </div>
+                    </div>
+                    <div class="logout-btn">退出登录</div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item">
+                        <span class="tab-icon">⊞</span>
+                        <span class="tab-label">衣橱</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">▭</span>
+                        <span class="tab-label">搭配</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">⊕</span>
+                        <span class="tab-label">AI</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">✦</span>
+                        <span class="tab-label">探索</span>
+                    </div>
+                    <div class="tab-item active">
+                        <span class="tab-icon">◉</span>
+                        <span class="tab-label">设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 充值页面 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">5. 充值穿贝 (WalletRechargeView)</div>
+            <div class="screen-subtitle">5档套餐：新手包/日常包/人气包/尊享包/臻选包</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="nav-bar">
+                        <div class="nav-btn">关闭</div>
+                        <div class="nav-title">充值穿贝</div>
+                        <div></div>
+                    </div>
+                    <div class="recharge-header">
+                        <div class="recharge-title">充值穿贝</div>
+                        <div class="recharge-subtitle">当前余额 128 穿贝</div>
+                        <div class="recharge-rate">固定汇率：10 穿贝 = 1 元</div>
+                    </div>
+                    <div class="package-card">
+                        <div class="package-info">
+                            <div class="package-title-row">
+                                <span class="package-title">新手包</span>
+                            </div>
+                            <div class="package-subtitle">轻量体验</div>
+                        </div>
+                        <div class="package-price-info">
+                            <div class="package-coins">100 穿贝</div>
+                            <div class="package-price">¥10</div>
+                        </div>
+                    </div>
+                    <div class="package-card selected">
+                        <div class="package-info">
+                            <div class="package-title-row">
+                                <span class="package-title">人气包</span>
+                                <span class="package-badge">热门</span>
+                            </div>
+                            <div class="package-subtitle">高频试穿</div>
+                        </div>
+                        <div class="package-price-info">
+                            <div class="package-coins">680 穿贝</div>
+                            <div class="package-price">¥68</div>
+                        </div>
+                    </div>
+                    <div class="package-card">
+                        <div class="package-info">
+                            <div class="package-title-row">
+                                <span class="package-title">日常包</span>
+                                <span class="package-badge">推荐</span>
+                            </div>
+                            <div class="package-subtitle">常用推荐</div>
+                        </div>
+                        <div class="package-price-info">
+                            <div class="package-coins">300 穿贝</div>
+                            <div class="package-price">¥30</div>
+                        </div>
+                    </div>
+                    <div class="package-card">
+                        <div class="package-info">
+                            <div class="package-title-row">
+                                <span class="package-title">尊享包</span>
+                                <span class="package-badge">超值</span>
+                            </div>
+                            <div class="package-subtitle">进阶玩家</div>
+                        </div>
+                        <div class="package-price-info">
+                            <div class="package-coins">1280 穿贝</div>
+                            <div class="package-price">¥128</div>
+                        </div>
+                    </div>
+                    <div class="package-card">
+                        <div class="package-info">
+                            <div class="package-title-row">
+                                <span class="package-title">臻选包</span>
+                            </div>
+                            <div class="package-subtitle">重度用户</div>
+                        </div>
+                        <div class="package-price-info">
+                            <div class="package-coins">3000 穿贝</div>
+                            <div class="package-price">¥300</div>
+                        </div>
+                    </div>
+                    <div class="recharge-submit-btn">立即充值 ¥68</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. 服饰详情页 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">6. 服饰详情 (WardrobeItemDetailView)</div>
+            <div class="screen-subtitle">大图预览、穿搭次数、信息/穿搭方案Tab、编辑属性</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="nav-bar">
+                        <div></div>
+                        <div class="nav-title">我的服饰详情</div>
+                        <div class="nav-btn">完成</div>
+                    </div>
+                    <div class="detail-photo">
+                        👕
+                        <span class="wear-count">穿搭 12 次</span>
+                        <div class="detail-photo-actions">
+                            <div class="photo-action-btn">✏️ 编辑</div>
+                            <div class="photo-action-btn">🖼 平铺</div>
+                        </div>
+                    </div>
+                    <div class="detail-tabs">
+                        <div class="detail-tab active">信息</div>
+                        <div class="detail-tab">穿搭方案</div>
+                    </div>
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-row-title">品类</span>
+                            <div class="detail-row-value">
+                                <span class="value-capsule">上衣</span>
+                                >
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-title">季节</span>
+                            <div class="detail-row-value">
+                                <span class="value-capsule">春</span>
+                                >
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-title">适用场景</span>
+                            <div class="detail-row-value">
+                                <span class="value-capsule">工作</span>
+                                >
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-title">色系</span>
+                            <div class="detail-row-value">
+                                <span class="value-capsule">黑色系</span>
+                                >
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-title">品牌</span>
+                            <div class="detail-row-value">Uniqlo ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. AI场景搭配 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">7. AI场景搭配 (CreateTabView)</div>
+            <div class="screen-subtitle">DIY穿搭 + AI智能搭配入口</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content" style="padding-top:44px">
+                    <div class="nav-bar" style="position:absolute;top:0;left:0;right:0;background:white;z-index:10">
+                        <div></div>
+                        <div class="nav-title">AI场景搭配</div>
+                        <div></div>
+                    </div>
+                    <div class="create-container">
+                        <div class="feature-card gray">
+                            <div>
+                                <div class="feature-title" style="color:#2E231C">DIY 穿搭</div>
+                                <div class="feature-subtitle" style="color:#948575">搭出创意好品味</div>
+                            </div>
+                            <div class="feature-icon">👕</div>
+                        </div>
+                        <div class="feature-card purple">
+                            <div>
+                                <div class="feature-title">AI 智能搭配</div>
+                                <div class="feature-subtitle">AI 帮你搭出无限可能</div>
+                            </div>
+                            <div class="feature-icon">✨</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item">
+                        <span class="tab-icon">⊞</span>
+                        <span class="tab-label">衣橱</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">▭</span>
+                        <span class="tab-label">搭配</span>
+                    </div>
+                    <div class="tab-item active">
+                        <span class="tab-icon">⊕</span>
+                        <span class="tab-label">AI</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">✦</span>
+                        <span class="tab-label">探索</span>
+                    </div>
+                    <div class="tab-item">
+                        <span class="tab-icon">◉</span>
+                        <span class="tab-label">设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. 添加衣物 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">8. 添加衣物 (AddClothingFlow)</div>
+            <div class="screen-subtitle">拍照/相册/整图拆解/批量导入</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="nav-bar">
+                        <div class="nav-btn">取消</div>
+                        <div></div>
+                        <div class="nav-btn" style="opacity:0.3">保存</div>
+                    </div>
+                    <div style="padding-top:40px">
+                        <div class="add-clothing-title">添加到衣橱</div>
+                        <div class="add-clothing-subtitle">支持拍照、相册与批量导入</div>
+
+                        <div class="action-card action-card-primary">
+                            <div class="action-info">
+                                <h3>📷 拍照添加</h3>
+                            </div>
+                        </div>
+
+                        <div class="action-card">
+                            <div class="action-info">
+                                <h3>✂️ 整图拆解</h3>
+                                <p>从一张图自动分割多件衣物</p>
+                            </div>
+                        </div>
+
+                        <div class="action-card">
+                            <div class="action-info">
+                                <h3>🖼 相册选择</h3>
+                            </div>
+                        </div>
+
+                        <div class="action-card">
+                            <div class="action-info">
+                                <h3>⬜ 批量导入</h3>
+                                <p>最多20张</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. AI试衣 -->
+        <div class="screen-wrapper">
+            <div class="screen-title">9. AI试衣 (TryOnTabView)</div>
+            <div class="screen-subtitle">模特预览、试穿记录、场景选择、生成推荐</div>
+            <div class="phone">
+                <div class="status-bar">
+                        <div class="status-left">
+                            <span>5G</span>
+                            <div class="signal-bars">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                        <div class="status-time">9:41</div>
+                        <div class="status-right">
+                            <div class="wifi-icon">
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-arc"></div>
+                                <div class="wifi-dot"></div>
+                            </div>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-cap"></div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="content">
+                    <div class="nav-bar">
+                        <div></div>
+                        <div class="nav-title">AI 试衣</div>
+                        <div class="nav-btn">关闭</div>
+                    </div>
+                    <div style="padding:12px 0">
+                        <div style="font-size:24px;font-weight:600;padding:0 16px 12px;color:#2E231C">AI 试衣</div>
+                    </div>
+                    <div class="model-preview">
+                        <div class="model-placeholder">👤</div>
+                        <div style="font-size:13px;color:#666">身高: 165cm · 体重: 52kg</div>
+                    </div>
+                    <div class="action-pills">
+                        <div class="action-pill">📋 试穿记录</div>
+                        <div class="action-pill">👤 查看模特</div>
+                        <div class="action-pill">🔄 替换模特</div>
+                    </div>
+                    <div class="section-tabs">
+                        <div class="section-tab active">我的搭配</div>
+                        <div class="section-tab">AI 推荐</div>
+                    </div>
+                    <div class="scene-selector">
+                        <div class="scene-label">场景选择</div>
+                        <div class="scene-tags">
+                            <div class="scene-tag active">日常</div>
+                            <div class="scene-tag">学校</div>
+                            <div class="scene-tag">工作</div>
+                            <div class="scene-tag">约会</div>
+                            <div class="scene-tag">运动</div>
+                        </div>
+                    </div>
+                    <div class="item-grid" style="padding:0 16px">
+                        <div class="item-card" style="aspect-ratio:1">
+                            👕<br><span class="item-name">休闲套装</span>
+                        </div>
+                        <div class="item-card" style="aspect-ratio:1">
+                            👔<br><span class="item-name">商务套装</span>
+                        </div>
+                    </div>
+                    <div class="generate-btn">
+                        ✨ 生成穿搭推荐
+                        <small>消耗 10 穿贝</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
