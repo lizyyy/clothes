@@ -16,6 +16,10 @@ struct ExploreFeedResponse: Codable {
     let creators: [ExploreCreatorDTO]
 }
 
+struct ExploreUserListResponse: Codable {
+    let users: [ExploreCreatorDTO]
+}
+
 struct ExploreCreatorDTO: Codable, Identifiable {
     let userID: Int64
     let name: String
@@ -101,6 +105,24 @@ struct ExploreService {
         request.httpMethod = isLiked ? "POST" : "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         _ = try await send(request, as: ExploreLikeActionResponse.self)
+    }
+
+    func fetchFollowing(token: String, userID: Int64) async throws -> [ExploreCreatorDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/following"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreUserListResponse.self)
+        return response.users
+    }
+
+    func fetchFollowers(token: String, userID: Int64) async throws -> [ExploreCreatorDTO] {
+        let endpoint = "api/v1/explore/users/\(userID)/followers"
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let response = try await send(request, as: ExploreUserListResponse.self)
+        return response.users
     }
 
     private func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {

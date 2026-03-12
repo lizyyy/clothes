@@ -14,6 +14,7 @@ import SwiftUI
 
 struct ExploreTabView: View {
     @AppStorage("auth_token") private var authToken = ""
+    @AppStorage("profile_uid") private var profileUID = ""
     @State private var exploreFilter: ExploreFilter = .following
     @State private var searchText = ""
     @State private var creators: [ExploreCreatorDTO] = []
@@ -21,6 +22,7 @@ struct ExploreTabView: View {
     @State private var errorMessage: String?
     @State private var selectedCreatorUserID: Int64?
     @State private var selectedSharedOutfit: ExploreSharedOutfitRoute?
+    @State private var selectedUserListRoute: ExploreUserListRoute?
 
     private let service = ExploreService()
 
@@ -30,7 +32,11 @@ struct ExploreTabView: View {
                 Color.white.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: 16) {
-                        ExploreTopBar(selection: $exploreFilter)
+                        ExploreTopBar(selection: $exploreFilter, onOpenProfile: {
+                            if let uid = Int64(profileUID) {
+                                selectedCreatorUserID = uid
+                            }
+                        })
 
                         ExploreSearchBar(text: $searchText)
                             .padding(.horizontal, 20)
@@ -87,6 +93,12 @@ struct ExploreTabView: View {
                                 creatorUserID: creator.userID,
                                 outfitID: outfit.id
                             )
+                        },
+                        onOpenFollowing: {
+                            selectedUserListRoute = ExploreUserListRoute(userID: creator.userID, type: .following)
+                        },
+                        onOpenFollowers: {
+                            selectedUserListRoute = ExploreUserListRoute(userID: creator.userID, type: .followers)
                         }
                     )
                 } else {
@@ -104,6 +116,14 @@ struct ExploreTabView: View {
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.secondaryText)
                 }
+            }
+            .navigationDestination(item: $selectedUserListRoute) { route in
+                ExploreUserListPageView(
+                    userID: route.userID,
+                    listType: route.type,
+                    token: authToken,
+                    onOpenCreator: { selectedCreatorUserID = $0 }
+                )
             }
         }
     }
@@ -232,6 +252,7 @@ struct ExploreTabView: View {
 
 private struct ExploreTopBar: View {
     @Binding var selection: ExploreFilter
+    let onOpenProfile: () -> Void
 
     var body: some View {
         HStack {
@@ -240,6 +261,9 @@ private struct ExploreTopBar: View {
                 tabButton(title: "探索更多", value: .trending)
             }
             Spacer()
+            Button("个人主页", action: onOpenProfile)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color.black)
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
@@ -474,9 +498,25 @@ private struct ExploreSharedOutfitRoute: Hashable, Identifiable {
     }
 }
 
+private struct ExploreUserListRoute: Hashable, Identifiable {
+    enum ListType: Hashable {
+        case following
+        case followers
+    }
+
+    let userID: Int64
+    let type: ListType
+
+    var id: String {
+        "\(userID)-\(type)"
+    }
+}
+
 private struct ExploreUserHomeView: View {
     let creator: ExploreCreatorDTO
     let onOpenOutfit: (ExploreOutfitDTO) -> Void
+    let onOpenFollowing: () -> Void
+    let onOpenFollowers: () -> Void
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -537,8 +577,14 @@ private struct ExploreUserHomeView: View {
                         .font(.title3.weight(.bold))
                         .foregroundStyle(AppTheme.titleText)
                     HStack(spacing: 18) {
-                        statItem(value: creator.followersCount, title: "粉丝")
-                        statItem(value: creator.followingCount, title: "关注")
+                        Button(action: onOpenFollowers) {
+                            statItem(value: creator.followersCount, title: "粉丝")
+                        }
+                        .buttonStyle(.appPlain)
+                        Button(action: onOpenFollowing) {
+                            statItem(value: creator.followingCount, title: "关注")
+                        }
+                        .buttonStyle(.appPlain)
                         statItem(value: totalLikes, title: "获赞")
                     }
                 }
@@ -804,4 +850,105 @@ private struct ExploreAvatar: View {
 private enum ExploreFilter: String {
     case following
     case trending
+}
+
+private struct ExploreUserListPageView: View {
+    let userID: Int64
+    let listType: ExploreUserListRoute.ListType
+    let token: String
+    let onOpenCreator: (Int64) -> Void
+
+    @State private var users: [ExploreCreatorDTO] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let service = ExploreService()
+
+    var body: some View {
+        List {
+            if isLoading {
+                ProgressView("加载中...")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowSeparator(.hidden)
+            } else if users.isEmpty {
+                Text("暂时没有数据")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.secondaryText)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowSeparator(.hidden)
+            } else {
+                ForEach(users) { user in
+                    ExploreUserListRow(user: user, onOpenCreator: onOpenCreator)
+                        .listRowSeparator(.hidden)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .background(Color(red: 0.97, green: 0.97, blue: 0.98).ignoresSafeArea())
+        .navigationTitle(listType == .following ? "关注" : "粉丝")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await loadUsers() }
+        .alert("错误", isPresented: Binding(get: { errorMessage != nil }, set: { _ in errorMessage = nil })) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private func loadUsers() async {
+        guard !token.isEmpty else {
+            errorMessage = "请先登录"
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            switch listType {
+            case .following:
+                users = try await service.fetchFollowing(token: token, userID: userID)
+            case .followers:
+                users = try await service.fetchFollowers(token: token, userID: userID)
+            }
+        } catch {
+            errorMessage = "加载失败：\(error.localizedDescription)"
+        }
+    }
+}
+
+private struct ExploreUserListRow: View {
+    let user: ExploreCreatorDTO
+    let onOpenCreator: (Int64) -> Void
+
+    var body: some View {
+        Button(action: {
+            guard !user.isSelf else { return }
+            onOpenCreator(user.userID)
+        }) {
+            HStack(spacing: 12) {
+                ExploreAvatar(
+                    initials: ExploreVisualStyle.initials(from: user.name),
+                    color: ExploreVisualStyle.avatarColor(from: user.userID)
+                )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(user.name)
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.titleText)
+                    HStack(spacing: 16) {
+                        Text("\(user.followersCount) 粉丝")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+                        Text("\(user.followingCount) 关注")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.appPlain)
+    }
 }
